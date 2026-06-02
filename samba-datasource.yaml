@@ -12,7 +12,6 @@
 #   kubectl -n default logs deploy/samba-datasource -c seed-fixtures
 # Remove:
 #   kubectl delete -f samba-datasource.yaml -n default
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
