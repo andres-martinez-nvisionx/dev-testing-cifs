@@ -1,0 +1,13 @@
+Quarterly report fixture.
+
+Section 1 — Overview
+The CIFS connector mounts shares via mount.cifs, walks them with DFS, and
+optionally queries ACLs over user-space SMB.
+
+Section 2 — Metrics
+Filed under cifs_scanner_* once the metrics refactor lands.
+
+Section 3 — Padding to make this file marginally larger
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
+incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis
+nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.

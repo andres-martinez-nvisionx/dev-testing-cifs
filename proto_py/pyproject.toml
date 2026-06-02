@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "proto_py"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = ["grpcio", "protobuf>=4.25.0"]
+
+[tool.setuptools]
+packages = ["proto_py"]
+
+[tool.setuptools.package-dir]
+proto_py = "."

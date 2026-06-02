@@ -1,0 +1,94 @@
+# samba-datasource.yaml — test SMB share for the CIFS connector in dev (eks-development).
+#
+# Analogous to `postgres-datasource` for the postgres connector. Provides the
+# share that `kickoff.py cifs` points its seeded credential at:
+#   //samba/share  ·  user testuser / testpass  ·  WORKGROUP
+# (matches the kickoff.py CIFS_* defaults and the local docker-compose samba).
+#
+# Deploy:
+#   kubectl apply -f samba-datasource.yaml -n default
+# Verify:
+#   kubectl -n default rollout status deploy/samba-datasource
+#   kubectl -n default logs deploy/samba-datasource -c seed-fixtures
+# Remove:
+#   kubectl delete -f samba-datasource.yaml -n default
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: samba-datasource
+  namespace: default
+  labels:
+    app: samba-datasource
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: samba-datasource
+  template:
+    metadata:
+      labels:
+        app: samba-datasource
+    spec:
+      # Seed the share with the same fixture tree as cifs-connector-be-go/testdata/share
+      # (≈9 files across nested dirs) so scan discovers a representative layout.
+      initContainers:
+        - name: seed-fixtures
+          image: busybox:1.36
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -e
+              cd /share
+              mkdir -p docs data images nested/level1/level2 reports
+              echo "# CIFS test share (dev-testing-cifs)" > README.md
+              echo "notes" > docs/notes.md
+              echo "readme" > docs/readme.txt
+              printf 'id,name,email\n1,alice,alice@example.com\n2,bob,bob@example.com\n' > data/records.csv
+              head -c 2048 /dev/urandom > images/photo.bin
+              echo "level1 file" > nested/level1/file_l1.txt
+              echo "level2 file" > nested/level1/level2/file_l2.txt
+              echo "Q report" > reports/quarterly.txt
+              echo "Seeded share tree:"; find . -type f | sort
+          volumeMounts:
+            - name: share
+              mountPath: /share
+      containers:
+        - name: samba
+          image: dperson/samba
+          # -u user;pass   -s name;path;browsable;readonly;guest;users;admins   -w workgroup  -p
+          args:
+            - "-u"
+            - "testuser;testpass"
+            - "-s"
+            - "share;/share;yes;no;no;testuser;testuser"
+            - "-w"
+            - "WORKGROUP"
+            - "-p"
+          ports:
+            - { containerPort: 445, name: smb }
+            - { containerPort: 139, name: netbios }
+          volumeMounts:
+            - name: share
+              mountPath: /share
+          readinessProbe:
+            tcpSocket: { port: 445 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: share
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: samba
+  namespace: default
+  labels:
+    app: samba-datasource
+spec:
+  selector:
+    app: samba-datasource
+  ports:
+    - { name: smb, port: 445, targetPort: 445 }
+    - { name: netbios, port: 139, targetPort: 139 }
