@@ -101,7 +101,22 @@ python validate.py --suffix 001 --require-augment  # exige augment_done:true
 
 # (opcional) augment aislado sin scan
 python augment_smoke.py --paths /README.md /data/records.csv --batches 2 --seed-payload
+
+# 3) Content (Fase 3 — requiere el deployment cifs content en dev, ver nota abajo)
+python content_kickoff.py --path /docs/readme.txt --suffix content-001
+python content_kickoff.py --path /nope.txt        # → FETCH_ERROR_NOT_FOUND
+python content_kickoff.py --unc-override //samba/otro  # → INVALID_URN (guard UNC mismatch)
+# con un source_url real copiado de un doc de OpenSearch:
+python content_kickoff.py --urn 'nx:cifs:v1?access=cifs-access-001&path=%2Fdocs%2Freadme.txt&unc=%2F%2Fsamba%2Fshare' --skip-seed
 ```
+
+> **Content mode**: `content_kickoff.py` no usa JobEngine — publica `ContentFetchRequest`
+> directo al stream `CONTENT_FETCH` (subject `content.fetch.cifs`) y espera el reply en un
+> inbox. **Requiere** un deployment del cifs-connector con `CONNECTOR_MODE=content` en dev
+> (bloque helm `cifsConnectorBeGoContent`, follow-up pendiente del PR de Fase 3). Sin eso,
+> el request queda sin consumir y el script timeoutea. La verificación del upload es opt-in
+> (`--verify --content-debug-url …`) porque el content-service real no expone el `/_debug`
+> del mock local.
 
 ## Validación en OpenSearch (curl directo)
 
@@ -122,6 +137,7 @@ o agregar `-u user:pass -k` al curl.)
 |---|---|
 | `kickoff.py` | scan (`cifs`) y augment (`cifs-augment`): siembra credencial + pipeline + job |
 | `augment_smoke.py` | augment aislado: publica `ItemBatch` directo a NATS |
+| `content_kickoff.py` | content mode (Fase 3): siembra credencial + publica `ContentFetchRequest` + espera reply |
 | `get_credentials.py` | lee la credencial CIFS sembrada (password enmascarado) |
 | `validate.py` | valida count + augment marker en OpenSearch |
 | `setup.sh` | crea venv e instala dependencias + `proto_py` |

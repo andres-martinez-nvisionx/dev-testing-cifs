@@ -99,9 +99,13 @@ el env del pod del connector en dev (Fase 4, T4.1). Los subjects van parametriza
   desplegar/verificar samba → `setup.sh` → seed+scan `kickoff.py cifs` → `validate.py` →
   augment `kickoff.py cifs-augment` → `validate.py --require-augment`), troubleshooting y cleanup.
   Criterio: alguien sin contexto corre la prueba siguiendo solo el README.
-- [ ] T5.2 — Corrida E2E real en dev: scan indexa los ~9 items en `pipeline-cifs-dsid-*`; augment
-  los actualiza con permisos/ACL/owner. Validado con `validate.py`.
-  Criterio: ambos scripts verdes y OpenSearch refleja scan luego augment.
+- [x] T5.2 — Corrida E2E real en dev (2026-06-02): scan indexó 8 docs v1 en `cifs-access-001-nxidx-000001`
+  (owner POSIX `root`). Augment validado vía `augment_smoke.py` (ItemBatch directo a `je.cifs-scanner.v1.in`)
+  → 8 docs `version:2` con owner/group SMB (SIDs `S-1-22-1-100`/`S-1-22-2-101`). Handler de augment OK en dev.
+  NOTA: el augment "real" vía extractor (`kickoff.py cifs-augment`) NO funciona en dev — el extractor
+  procesa pero no reenvía el ItemBatch a `je.cifs-scanner.v1.in` (JE_CIFS no lo recibe). Box augmenta
+  INLINE (no usa extractor), postgres hace scan+content → nadie ejerce ese handoff en dev. Pregunta de
+  plataforma (¿augment de cifs en prod va por extractor o inline?), NO bug del connector.
 - [ ] T5.3 — `git remote add` + primer commit (commit lo hace el usuario manualmente).
 
 ---
